@@ -1,0 +1,213 @@
+﻿@page "/Goat/show/{id:long}"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+@if (_loading)
+{
+    <MudSkeleton Animation="Animation.Wave"/>
+}
+else if (_goat is null)
+{
+    <MudText Typo="Typo.h2">Could not find this goat</MudText>
+}
+else
+{
+    <MudStack>
+        <MudExpansionPanels>
+            <MudExpansionPanel Text="Pedigree">
+                <MudCard>
+                    <MudCardContent>
+                        <MudTextField ReadOnly="true" Value="_pedigree.Dam ?? string.Empty" Label="Dam"/>
+                        <MudTextField ReadOnly="true" Value="_pedigree.Sire ?? string.Empty" Label="Sire"/>
+                        <MudTextField ReadOnly="true" Value="_pedigree.Dd ?? string.Empty" Label="Dam's Dam"/>
+                        <MudTextField ReadOnly="true" Value="_pedigree.Ds ?? string.Empty" Label="Dam's Sire"/>
+                        <MudTextField ReadOnly="true" Value="_pedigree.Sd ?? string.Empty" Label="Sire's Dam"/>
+                        <MudTextField ReadOnly="true" Value="_pedigree.Ss ?? string.Empty" Label="Sire's Sire"/>
+                    </MudCardContent>
+                </MudCard>
+            </MudExpansionPanel>
+        </MudExpansionPanels>
+        <MudCard>
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="8">
+                        <MudStack>
+                            <MudText Align="Align.Center" Class="mb-n4">@_goat.BarnName</MudText>
+                            <MudForm>
+                                <MudTextField @ref="_barnName" T="string" Label="Herd Name" Value="_goat.BarnName"/>
+                                <MudTextField @ref="_fullName" T="string" Label="Full Name" Value="_goat.FullName"/>
+                                <MudTextField @ref="_sex" T="string" Label="Sex" Value="_goat.Sex" ReadOnly="true"/>
+                                <MudTextField @ref="_breed" T="string" Label="Breed" Value="_goat.BreedType"/>
+                                <MudDatePicker @ref="_dob" Label="Date of Birth" Date="_goat.DateOfBirth ?? DateTime.Now"/>
+                                <MudSwitch T="bool" @bind-checked="Alive" Label="Alive" Color="Color.Primary"/>
+                                @if (!Alive)
+                                {
+                                    <MudDatePicker @ref="_dod" Label="Date of Death" Required="true" Date="_goat.DateOfDeath ?? null"/>
+                                }
+                                <MudSwitch T="bool" @bind-checked="Sold" Label="Sold" Color="Color.Primary"/>
+                                @if (Sold)
+                                {
+                                    <MudDatePicker @ref="_dos" Label="Date of Sale" Required="true" Date="_goat.DateOfSale ?? null"/>
+                                }
+                                <MudTextField @ref="_notes" T="string" Label="Notes" AutoGrow/>
+                            </MudForm>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@SaveGoat">Save</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@DeleteGoat">Delete</MudButton>
+                        </MudStack>
+                    </MudItem>
+                    <MudItem>
+                        <MudImage ObjectFit="ObjectFit.Cover" ObjectPosition="ObjectPosition.Center" Src="@(_goat.ImageLink ?? "https://wallpapercave.com/wp/wp5081965.jpg")" Elevation="25" Class="rounded-lg d-flex align-center justify-center mud-width-full" Height="200" Width="400"/>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+        <MudSpacer/>
+        <MudPaper>
+            <MudStack>
+                <MudGrid>
+                    <MudItem xs="10">
+                        <MudText Typo="Typo.h4" Align="Align.Center">Health Events for @_goat.BarnName</MudText>
+                    </MudItem>
+                    <MudItem>
+                        <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                                OnClick="@OnAddClick"/>
+                    </MudItem>
+                </MudGrid>
+                <MudSpacer/>
+                <MudTable Items="_healthEvents" Hover="true" OnRowClick="HealthEventRowClick" T="HealthEvent">
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<HealthEvent, object?>(x => x.EventText)">Event</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<HealthEvent, object?>(x => x.EventDate)">Date</MudTableSortLabel></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Event">@context.EventText</MudTd>
+                        <MudTd DataLabel="Date">@context.EventDate</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager/>
+                    </PagerContent>
+                </MudTable>
+            </MudStack>
+        </MudPaper>
+        <MudPaper>
+            <MudStack>
+                <MudGrid>
+                    <MudItem xs="10">
+                        <MudText Typo="Typo.h4" Align="Align.Center">Kidding Events for @_goat.BarnName</MudText>
+                    </MudItem>
+                </MudGrid>
+                <MudSpacer/>
+                <MudTable Items="_kiddings" Hover="true" T="Kidding" OnRowClick="KiddingEventRowClick">
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.bucks)">Bucks</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.does)">Does</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.Sire)">Sire</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.Notes)">Notes</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.Date)">Date</MudTableSortLabel></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Bucks">@context.bucks</MudTd>
+                        <MudTd DataLabel="Does">@context.does</MudTd>
+                        <MudTd DataLabel="Sire">@context.Sire</MudTd>
+                        <MudTd DataLabel="Status">@context.Notes</MudTd>
+                        <MudTd DataLabel="Date">@context.Date</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager/>
+                    </PagerContent>
+                </MudTable>
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+}
+
+@code {
+
+    [Parameter]
+    public long Id { get; set; }
+
+    MudTextField<string> _fullName;
+    MudTextField<string> _sex;
+    MudTextField<string> _breed;
+    MudTextField<string> _notes;
+    MudTextField<string> _barnName;
+    MudDatePicker _dob;
+    MudDatePicker _dod;
+    MudDatePicker _dos;
+
+    public bool Sold { get; set; } = false;
+    public bool Alive { get; set; } = true;
+
+    private bool _readOnly = true;
+    private bool _loading = true;
+
+    Goat? _goat;
+    List<HealthEvent> _healthEvents;
+    List<Kidding> _kiddings;
+    Pedigree _pedigree;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _goat = await Db.Goats.Where(x => x.Id == Id).FirstOrDefaultAsync();
+        if (_goat != null)
+        {
+            Sold = _goat.Sold.Value;
+            Alive = _goat.Alive.Value;
+            _healthEvents = await Db.HealthEvents.Where(x => x.GoatId == _goat.Id).ToListAsync();
+            _kiddings = await Db.Kiddings.Where(x => x.GoatId == _goat.Id).ToListAsync();
+            _pedigree = await Db.Pedigrees.FirstOrDefaultAsync(x => x.GoatId == _goat.Id) ?? new Pedigree();
+        }
+        _loading = false;
+    }
+
+    private async void SaveGoat()
+    {
+        _goat.BarnName = _barnName.Value;
+        _goat.FullName = _fullName.Value;
+        _goat.Sex = _sex.Value;
+        _goat.BreedType = _breed.Value;
+        _goat.Notes = _notes.Value;
+        _goat.DateOfBirth = _dob.Date.Value.ToUniversalTime();
+        _goat.Sold = Sold;
+        _goat.Alive = Alive;
+        if (!Alive)
+        {
+            _goat.DateOfDeath = _dod.Date.Value.ToUniversalTime();
+        }
+
+        if (Sold)
+        {
+            _goat.DateOfSale = _dos.Date.Value.ToUniversalTime();
+        }
+        Db.Goats.Update(_goat);
+        await Db.SaveChangesAsync();
+        Snackbar.Add("Goat saved", Severity.Success);
+        StateHasChanged();
+    }
+
+    private async void DeleteGoat()
+    {
+        Db.Goats.Remove(_goat);
+        await Db.SaveChangesAsync();
+        Snackbar.Add("Goat Deleted", Severity.Success);
+        NavigationManager.NavigateTo("/Goats/all");
+    }
+
+    private void OnAddClick()
+    {
+        NavigationManager.NavigateTo($"/Healthevent/add/{_goat.Id}");
+    }
+
+    private void HealthEventRowClick(TableRowClickEventArgs<HealthEvent> tableRowClickEventArgs)
+    {
+        NavigationManager.NavigateTo($"/Healthevent/View/{tableRowClickEventArgs.Item.Id}");
+    }
+
+    private void KiddingEventRowClick(TableRowClickEventArgs<Kidding> tableRowClickEventArgs)
+    {
+        NavigationManager.NavigateTo($"/Kidding/view/{tableRowClickEventArgs.Item.Id}");
+    }
+}

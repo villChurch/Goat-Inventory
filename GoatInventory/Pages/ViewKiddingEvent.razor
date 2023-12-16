@@ -1,0 +1,117 @@
+﻿@page "/Kidding/view/{id:long}"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+@if (loading)
+{
+    <MudSkeleton Animation="Animation.Wave" />
+}
+else if (_kiddingEvent != null)
+{
+    <MudStack>
+        <MudCard>
+            <MudCardContent>
+                <MudItem>
+                    <MudStack>
+                        <MudForm @ref="_form">
+                            <MudNumericField @bind-Value="_does" Label="Does" Variant="Variant.Text" Min="0"/>
+                            <MudNumericField @bind-Value="_bucks" Label="Bucks" Variant="Variant.Text" Min="0"/>
+                            <MudTextField @ref="_sire" T="string" Label="Sire" Required="true" RequiredError="Sire must be present" Value="_kiddingEvent.Sire"/>
+                            <MudTextField @ref="_notes" T="string" Label="Notes" Required="false" Value="_kiddingEvent.Notes"/>
+                            <MudDatePicker @ref="_eventDate" Label="Event Date" Date="_kiddingEvent.Date ?? DateTime.Now"/>
+                            <MudAutocomplete T="Goat" Label="Goat" @bind-Value="selectedGoat" SearchFunc="@Search1" Variant="Variant.Outlined"
+                                             ProgressIndicatorColor="SelectedColor" ToStringFunc="converter"
+                                             Required="true" RequiredError="Must select a goat for this event">
+                                <ProgressIndicatorInPopoverTemplate>
+                                    <MudList Clickable="false">
+                                        <MudListItem>
+                                            Loading Goats...
+                                        </MudListItem>
+                                    </MudList>
+                                </ProgressIndicatorInPopoverTemplate>
+                            </MudAutocomplete>
+                        </MudForm>
+                        <MudItem>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@SaveEvent">Save Event</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@DeleteEvent">Delete Event</MudButton>
+                        </MudItem>
+                    </MudStack>
+                </MudItem>
+            </MudCardContent>
+        </MudCard>
+    </MudStack>
+}
+
+@code {
+    
+    [Parameter]
+    public long id { get; set; }
+
+    List<Goat> _goats;
+    MudForm _form;
+    MudTextField<string> _sire;
+    MudTextField<string> _sex;
+    MudTextField<string> _notes;
+    MudDatePicker _eventDate;
+
+    private bool loading = true;
+    private Goat selectedGoat;
+
+    Kidding? _kiddingEvent;
+    
+    public int _does { get; set; }
+    public int _bucks { get; set; }
+    
+    public Color SelectedColor { get; set; } = Color.Default;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _kiddingEvent = await Db.Kiddings.Where(x => x.Id == id).FirstOrDefaultAsync();
+        _goats = await Db.Goats.ToListAsync();
+        selectedGoat = _goats.FirstOrDefault(x => x.Id == _kiddingEvent.GoatId);
+        loading = false;
+        _does = _kiddingEvent.does;
+        _bucks = _kiddingEvent.bucks;
+    }
+    
+    private Task<IEnumerable<Goat>> Search1(string value)
+    {
+        return Task.FromResult(string.IsNullOrEmpty(value) ? _goats 
+            : _goats.Where(x => x.BarnName!.Contains(value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    Func<Goat, string> converter = g => g.BarnName ?? string.Empty;
+
+    private async Task SaveEvent()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            _kiddingEvent!.Date = _eventDate.Date?.ToUniversalTime();
+            _kiddingEvent.Notes = _notes.Value;
+            _kiddingEvent.Sire = _sire.Value;
+            _kiddingEvent.GoatId = selectedGoat.Id;
+            _kiddingEvent.does = _does;
+            _kiddingEvent.bucks = _bucks;
+            Db.Kiddings.Update(_kiddingEvent);
+            await Db.SaveChangesAsync();
+            Snackbar.Add("Kidding event updated", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Form is not valid", Severity.Warning);
+        }
+    }
+
+    private async Task DeleteEvent()
+    {
+        if (_kiddingEvent != null) Db.Kiddings.Remove(_kiddingEvent);
+        await _form.ResetAsync();
+        Snackbar.Add("Kidding event deleted", Severity.Success);
+        await Db.SaveChangesAsync();
+        NavigationManager.NavigateTo($"/Goat/show/{selectedGoat.Id}");
+    }
+}

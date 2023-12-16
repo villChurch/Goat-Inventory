@@ -1,0 +1,80 @@
+﻿@page "/Healthevent/View/{id:long}"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+@if (_loading)
+{
+    <MudSkeleton Animation="Animation.Wave"/>
+}
+else if (!_loading && _healthEvent != null)
+{
+    <MudCard>
+        <MudCardContent>
+            <MudItem>
+                <MudStack>
+                    <MudForm @ref="_form">
+                        <MudTextField @ref="_event" T="string" Label="Event" AutoGrow Required="true"
+                                      RequiredError="Must have a health event" Value="_healthEvent.EventText"/>
+                        <MudDatePicker @ref="_eventDate" Label="Event Date" Date="_healthEvent.EventDate ?? DateTime.Now"/>
+                    </MudForm>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@SaveEvent">Save Event</MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@DeleteEvent">Delete Event</MudButton>
+                </MudStack>
+            </MudItem>
+        </MudCardContent>
+    </MudCard>
+    <MudSpacer/>
+}
+
+@code {
+    
+    [Parameter]
+    public long Id { get; set; }
+
+    MudForm? _form;
+    MudTextField<string>? _event;
+    MudDatePicker? _eventDate;
+
+    HealthEvent? _healthEvent;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _healthEvent = await Db.HealthEvents.Where(x => x.Id == Id).FirstOrDefaultAsync();
+        _loading = false;
+    }
+
+    private async Task SaveEvent()
+    {
+        await _form?.Validate()!;
+        if (_form.IsValid && _healthEvent != null)
+        {
+            _healthEvent.EventDate = _eventDate?.Date?.ToUniversalTime();
+            _healthEvent.EventText = _event?.Value;
+            Db.HealthEvents.Update(_healthEvent);
+            await Db.SaveChangesAsync();
+            Snackbar.Add($"Saved changes to health event {_healthEvent?.Id}");
+        }
+        else if (_healthEvent is null)
+        {
+            Snackbar.Add("Could not find this health event", Severity.Error);
+        }
+        else
+        {
+            Snackbar.Add("Form is not valid", Severity.Warning);
+        }
+    }
+
+    private async Task DeleteEvent()
+    {
+        if (_healthEvent != null) Db.HealthEvents.Remove(_healthEvent);
+        await Db.SaveChangesAsync();
+        await _form?.ResetAsync()!;
+        Snackbar.Add("Health event deleted");
+        NavigationManager.NavigateTo(_healthEvent == null ? $"/Goat/show/{_healthEvent.GoatId}" : "/Goats/all");
+    }
+
+}

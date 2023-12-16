@@ -1,0 +1,125 @@
+﻿@page "/Goat/new"
+@using GoatInventory.Models
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+
+<MudGrid>
+    <MudItem xs="12" sm="7">
+        <MudGrid>
+            <MudItem xs="6">
+                <MudPaper Class="pa-4 mt-4">
+                    <MudForm @ref="_form" @bind-IsValid="@_success">
+                        <MudTextField @ref="_fullName" T="string" Label="Full Name" Required="true" RequiredError="Full name is required!"/>
+                        <MudTextField @ref="_herdName" T="string" Label="Herd Name" Required="true" RequiredError="Herd name is required!"/>
+                        <MudTextField @ref="_sex" T="string" Label="Sex" Required="true"/>
+                        <MudDatePicker @ref="_dateOfBirth" Label="Date Of Birth" Editable="true" @bind-Date="_date" Placeholder="Select Date" Required="true" Mask="@(new DateMask("MM/dd/yyyy"))" DateFormat="MM/dd/yyyy"/>
+                        <MudTextField @ref="_breed" T="string" Label="Breed" Required="true" RequiredError="Goat must have a breed"/>
+                        <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+                            <ButtonTemplate>
+                                <MudFab HtmlTag="label"
+                                        Color="Color.Secondary"
+                                        Icon="@Icons.Material.Filled.Image"
+                                        Label="Load picture"
+                                        for="@context.Id"/>
+                            </ButtonTemplate>
+                        </MudFileUpload>
+                    </MudForm>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6">
+                <MudPaper Class="pa-4 mt-4">
+                    <MudForm @ref="_pedForm">
+                        <MudTextField @ref="_dam" T="string" Label="Dam" Required="true"/>
+                        <MudTextField @ref="_sire" T="string" Label="Sire" Required="true"/>
+                        <MudTextField @ref="_dd" T="string" Label="Dam's Dam" Required="true"/>
+                        <MudTextField @ref="_ds" T="string" Label="Dam's Sire" Required="true"/>
+                        <MudTextField @ref="_sd" T="string" Label="Sire's Dam" Required="true"/>
+                        <MudTextField @ref="_ss" T="string" Label="Sire's Sire" Required="true"/>
+                    </MudForm>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Class="pa-4 mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@AddNewGoat">Add Goat</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" DisableElevation="true" OnClick="@(()=>_form.Reset())" Class="mx-2">Reset</MudButton>
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    bool _success;
+    MudForm _form;
+    DateTime? _date = DateTime.Today;
+    MudTextField<string> _fullName;
+    MudTextField<string> _herdName;
+    MudTextField<string> _sex;
+    MudTextField<string> _breed;
+    MudDatePicker _dateOfBirth;
+    Goat _newGoat;
+    IBrowserFile? _imageFile;
+
+    MudForm _pedForm;
+    MudTextField<string> _sire;
+    MudTextField<string> _dam;
+    MudTextField<string> _dd;
+    MudTextField<string> _ds;
+    MudTextField<string> _sd;
+    MudTextField<string> _ss;
+
+    private async void AddNewGoat()
+    {
+        await _form.Validate();
+        await _pedForm.Validate();
+        if (_form.IsValid && _imageFile is not null && _pedForm.IsValid)
+        {
+            await SaveFile();
+            _newGoat = new Goat
+            {
+                FullName = _fullName.Value,
+                BarnName = _herdName.Value,
+                Sex = _sex.Value,
+                BreedType = _breed.Value,
+                DateOfBirth = _dateOfBirth.Date?.ToUniversalTime(),
+                ImageLink = $"images/{_imageFile.Name}"
+            };
+            var res = await Db.Goats.AddAsync(_newGoat);
+            await Db.SaveChangesAsync();
+            var pedigree = new Pedigree
+            {
+                Sire = _sire.Value,
+                Dam = _dam.Value,
+                Ss = _ss.Value,
+                Sd = _sd.Value,
+                Ds = _ds.Value,
+                Dd = _dd.Value,
+                GoatId = res.Entity.Id
+            };
+            await Db.Pedigrees.AddAsync(pedigree);
+            Snackbar.Add($"Goat {_fullName.Value} has been added", Severity.Success);
+            await _form.ResetAsync();
+            await Db.SaveChangesAsync();
+        }
+        else if (_imageFile is null)
+        {
+            Snackbar.Add("No image uploaded for goat.", Severity.Error);
+        }
+        else
+        {
+            Snackbar.Add("Form is not valid. Please see errors on form.", Severity.Error);
+        }
+    }
+    
+    private void UploadFiles(IBrowserFile uploadFile)
+    {
+        //save for later
+        _imageFile = uploadFile;
+    }
+
+    private async Task SaveFile()
+    {
+        if (_imageFile is null) return;
+        await using FileStream fs = new($"wwwroot/images/{_imageFile.Name}", FileMode.Create);
+        await _imageFile.OpenReadStream(5120000L).CopyToAsync(fs);
+    }
+}

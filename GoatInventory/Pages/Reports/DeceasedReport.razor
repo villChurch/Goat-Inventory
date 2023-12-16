@@ -1,0 +1,76 @@
+﻿@page "/Reports/deceased"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@inject GoatInventoryContext Db
+
+<MudStack>
+    <MudCard>
+        <MudCardContent>
+            <MudItem>
+                <MudStack>
+                    <MudForm @ref="_form">
+                        <MudDatePicker @ref="_startDate" Label="Start Date" Required="true"/>
+                        <MudDatePicker @ref="_endDate" Label="End Date" Date="DateTime.Now" Required="true"/>
+                    </MudForm>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@Search">Search</MudButton>
+                </MudStack>
+            </MudItem>
+        </MudCardContent>
+    </MudCard>
+</MudStack>
+
+@if (searching)
+{
+    <MudSpacer/>
+        <MudSkeleton Animation="Animation.Wave"/>
+}
+else if (!searching)
+{
+    <MudTable Items="@_goats" T="Goat">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Goats</MudText>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.FullName)">Full Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.BarnName)">Herd Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.BreedType)">Breed</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.Sex)">Sex</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.DateOfDeath)">Date of Death</MudTableSortLabel></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="FullName">@context.FullName</MudTd>
+            <MudTd DataLabel="BarnName">@context.BarnName</MudTd>
+            <MudTd DataLabel="BreedType">@context.BreedType</MudTd>
+            <MudTd DataLabel="Sex">@context.Sex</MudTd>
+            <MudTd DataLabel="DateOfDeath">@context.DateOfDeath</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+}
+
+@code {
+
+    private bool searching = false;
+
+    MudForm _form;
+    MudDatePicker _startDate;
+    MudDatePicker _endDate;
+
+    List<Goat> _goats;
+
+    private async Task Search()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            searching = true;
+            _goats = await Db.Goats
+                .Where(x => x.DateOfDeath >= _startDate.Date.Value.ToUniversalTime() && x.DateOfDeath <= _endDate.Date.Value.ToUniversalTime())
+                .ToListAsync();
+            searching = false;
+        }
+    }
+
+}
