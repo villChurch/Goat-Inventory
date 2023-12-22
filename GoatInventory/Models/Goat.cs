@@ -30,4 +30,12 @@ public partial class Goat
     public int? PriceOfSale { get; set; }
     
     public string? ImageLink { get; set; }
+
+    public override bool Equals(object o)
+    {
+        var other = o as Goat;
+        return other?.Id == Id;
+    }
+
+    public override int GetHashCode() => Id.GetHashCode();
 }

@@ -11,12 +11,12 @@
         <MudTextField @bind-Value="searchString1" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
     </ToolBarContent>
     <HeaderContent>
-        <MudTh>Full Name</MudTh>
-        <MudTh>Herd Name</MudTh>
-        <MudTh>Breed</MudTh>
-        <MudTh>Sex</MudTh>
-        <MudTh>Date Of Birth</MudTh>
-        <MudTh>Alive</MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.FullName)">Full Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.BarnName)">Herd Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x =>x.BreedType)">Breed</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x =>x.Sex)">Sex</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.DateOfBirth)">Date of Birth</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<Goat, object?>(x => x.Alive)">Alive</MudTableSortLabel></MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd DataLabel="FullName">@context.FullName</MudTd>

@@ -1,7 +1,9 @@
 ﻿@page "/Goat/new"
 @using GoatInventory.Models
+@using GoatInventory.Pages.Dialogs
 @inject GoatInventoryContext Db
 @inject ISnackbar Snackbar
+@inject IDialogService Dialog
 
 <MudGrid>
     <MudItem xs="12" sm="7">
@@ -12,7 +14,8 @@
                         <MudTextField @ref="_fullName" T="string" Label="Full Name" Required="true" RequiredError="Full name is required!"/>
                         <MudTextField @ref="_herdName" T="string" Label="Herd Name" Required="true" RequiredError="Herd name is required!"/>
                         <MudTextField @ref="_sex" T="string" Label="Sex" Required="true"/>
-                        <MudDatePicker @ref="_dateOfBirth" Label="Date Of Birth" Editable="true" @bind-Date="_date" Placeholder="Select Date" Required="true" Mask="@(new DateMask("MM/dd/yyyy"))" DateFormat="MM/dd/yyyy"/>
+                        <MudTextField @ref="_dateOfBirthString" T="string" Label="Date Of Birth" Placeholder="mm/dd/yyyy" Required="true"/>
+                        @* <MudDatePicker @ref="_dateOfBirth" Label="Date Of Birth" Editable="true" @bind-Date="_date" Placeholder="Select Date" Required="true" Mask="@(new DateMask("MM/dd/yyyy"))" DateFormat="MM/dd/yyyy"/> *@
                         <MudTextField @ref="_breed" T="string" Label="Breed" Required="true" RequiredError="Goat must have a breed"/>
                         <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
                             <ButtonTemplate>
@@ -50,11 +53,12 @@
 @code {
     bool _success;
     MudForm _form;
-    DateTime? _date = DateTime.Today;
+    DateTime? _date;
     MudTextField<string> _fullName;
     MudTextField<string> _herdName;
     MudTextField<string> _sex;
     MudTextField<string> _breed;
+    MudTextField<string> _dateOfBirthString;
     MudDatePicker _dateOfBirth;
     Goat _newGoat;
     IBrowserFile? _imageFile;
@@ -66,12 +70,22 @@
     MudTextField<string> _ds;
     MudTextField<string> _sd;
     MudTextField<string> _ss;
+    DateTime _dob;
 
+
+    private bool CheckDate()
+    {
+        return _dateOfBirthString.Value.Length > 0 && DateTime.TryParse(_dateOfBirthString.Value, out _dob);
+    }
     private async void AddNewGoat()
     {
         await _form.Validate();
         await _pedForm.Validate();
-        if (_form.IsValid && _imageFile is not null && _pedForm.IsValid)
+        if (!CheckDate())
+        {
+            Snackbar.Add("Date is not valid.", Severity.Error);
+        }
+        else if (_form.IsValid && _pedForm.IsValid)
         {
             await SaveFile();
             _newGoat = new Goat
@@ -80,8 +94,8 @@
                 BarnName = _herdName.Value,
                 Sex = _sex.Value,
                 BreedType = _breed.Value,
-                DateOfBirth = _dateOfBirth.Date?.ToUniversalTime(),
-                ImageLink = $"images/{_imageFile.Name}"
+                DateOfBirth = _dob.ToUniversalTime(),
+                ImageLink = _imageFile is null ? "https://wallpapercave.com/wp/wp5081965.jpg" : $"images/{_imageFile.Name}"
             };
             var res = await Db.Goats.AddAsync(_newGoat);
             await Db.SaveChangesAsync();
@@ -100,10 +114,6 @@
             await _form.ResetAsync();
             await Db.SaveChangesAsync();
         }
-        else if (_imageFile is null)
-        {
-            Snackbar.Add("No image uploaded for goat.", Severity.Error);
-        }
         else
         {
             Snackbar.Add("Form is not valid. Please see errors on form.", Severity.Error);
@@ -119,7 +129,20 @@
     private async Task SaveFile()
     {
         if (_imageFile is null) return;
-        await using FileStream fs = new($"wwwroot/images/{_imageFile.Name}", FileMode.Create);
-        await _imageFile.OpenReadStream(5120000L).CopyToAsync(fs);
+        if (_imageFile.Size > 5120000L)
+        {
+            _imageFile = null;
+            OpenDialog(new DialogOptions() { DisableBackdropClick = true });
+        }
+        else
+        {
+            await using FileStream fs = new($"wwwroot/images/{_imageFile.Name}", FileMode.Create);
+            await _imageFile.OpenReadStream(5120000L).CopyToAsync(fs);
+        }
+    }
+    
+    private void OpenDialog(DialogOptions options)
+    {
+        Dialog.Show<FileSizeDialog>("Custom Options Dialog", options);
     }
 }

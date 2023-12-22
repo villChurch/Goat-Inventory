@@ -1,0 +1,87 @@
+﻿@page "/Healthevent/multi/add"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+
+@if (_loading)
+{
+    <MudSkeleton Animation="Animation.Wave" />
+}
+else if (_goats.Count > 0)
+{
+    <MudStack>
+        <MudCard>
+            <MudCardContent>
+                <MudItem>
+                    <MudStack>
+                        <MudForm @ref="_form">
+                            <MudTextField @ref="_event" T="string" Label="Event" AutoGrow Required="true" RequiredError="Must have a health event"/>
+                            <MudDatePicker @ref="_eventDate" Label="Event Date" Date="DateTime.Now"/>
+                            <MudSelect T="Goat" Label="Goats" MultiSelection="true" @bind-Value="@_value"
+                                       @bind-SelectedValues="@_values" ToStringFunc="@converter"
+                                       SelectAll="true" SelectAllText="Select all Goats">
+                                @foreach (var goat in _goats)
+                                {
+                                    <MudSelectItem T="Goat" Value="@goat"/>
+                                }
+                            </MudSelect>
+                        </MudForm>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@AddEvent">Save Event</MudButton>
+                    </MudStack>
+                </MudItem>
+            </MudCardContent>
+        </MudCard>
+        <MudSpacer/>
+    </MudStack>
+}
+else
+{
+    <MudText Typo="Typo.h2">No goats found</MudText>
+}
+
+@code {
+
+    List<Goat> _goats;
+    bool _loading = true;
+    MudDatePicker _eventDate;
+    MudTextField<string> _event;
+    MudForm _form;
+
+    Goat _value { get; set; }
+    IEnumerable<Goat> _values { get; set; } = new HashSet<Goat>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _goats = await Db.Goats.OrderBy(x => x.BarnName).ToListAsync();
+        _loading = false;
+    }
+
+    private async void AddEvent()
+    {
+        await _form.Validate();
+        if (_form.IsValid && _values.Any())
+        {
+            foreach (var goat in _values)
+            {
+                var healthEvent = new HealthEvent
+                {
+                    EventText = _event.Value,
+                    EventDate = _eventDate.Date.Value.ToUniversalTime(),
+                    GoatId = goat.Id
+                };
+                await Db.HealthEvents.AddAsync(healthEvent);
+            }
+            await Db.SaveChangesAsync();
+            await _form.ResetAsync();
+            StateHasChanged();
+            Snackbar.Add($"Health event saved for {_values.Count()} goats.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Form is not valid or no goats selected", Severity.Error);
+        }
+    }
+
+    Func<Goat, string> converter = g => $"{g.BarnName}, {g.FullName}";
+}
