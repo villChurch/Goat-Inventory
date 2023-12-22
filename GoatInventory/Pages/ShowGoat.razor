@@ -20,12 +20,12 @@ else
             <MudExpansionPanel Text="Pedigree">
                 <MudCard>
                     <MudCardContent>
-                        <MudTextField ReadOnly="true" Value="_pedigree.Dam ?? string.Empty" Label="Dam"/>
-                        <MudTextField ReadOnly="true" Value="_pedigree.Sire ?? string.Empty" Label="Sire"/>
-                        <MudTextField ReadOnly="true" Value="_pedigree.Dd ?? string.Empty" Label="Dam's Dam"/>
-                        <MudTextField ReadOnly="true" Value="_pedigree.Ds ?? string.Empty" Label="Dam's Sire"/>
-                        <MudTextField ReadOnly="true" Value="_pedigree.Sd ?? string.Empty" Label="Sire's Dam"/>
-                        <MudTextField ReadOnly="true" Value="_pedigree.Ss ?? string.Empty" Label="Sire's Sire"/>
+                        <MudTextField @ref="_dam" ReadOnly="false" Value="_pedigree.Dam ?? string.Empty" Label="Dam"/>
+                        <MudTextField @ref="_sire" ReadOnly="false" Value="_pedigree.Sire ?? string.Empty" Label="Sire"/>
+                        <MudTextField @ref="_dd" ReadOnly="false" Value="_pedigree.Dd ?? string.Empty" Label="Dam's Dam"/>
+                        <MudTextField @ref="_ds" ReadOnly="false" Value="_pedigree.Ds ?? string.Empty" Label="Dam's Sire"/>
+                        <MudTextField @ref="_sd" ReadOnly="false" Value="_pedigree.Sd ?? string.Empty" Label="Sire's Dam"/>
+                        <MudTextField @ref="_ss" ReadOnly="false" Value="_pedigree.Ss ?? string.Empty" Label="Sire's Sire"/>
                     </MudCardContent>
                 </MudCard>
             </MudExpansionPanel>
@@ -134,6 +134,12 @@ else
     MudTextField<string> _breed;
     MudTextField<string> _notes;
     MudTextField<string> _barnName;
+    MudTextField<string> _dam;
+    MudTextField<string> _sire;
+    MudTextField<string> _ss;
+    MudTextField<string> _sd;
+    MudTextField<string> _ds;
+    MudTextField<string> _dd;
     MudDatePicker _dob;
     MudDatePicker _dod;
     MudDatePicker _dos;
@@ -182,17 +188,26 @@ else
         {
             _goat.DateOfSale = _dos.Date.Value.ToUniversalTime();
         }
+
+        _pedigree.Sire = _sire.Value ?? string.Empty;
+        _pedigree.Dam = _dam.Value ?? string.Empty;
+        _pedigree.Sd = _sd.Value ?? string.Empty;
+        _pedigree.Ss = _ss.Value ?? string.Empty;
+        _pedigree.Ds = _ds.Value ?? string.Empty;
+        _pedigree.Dd = _dd.Value ?? string.Empty;
         Db.Goats.Update(_goat);
+        Db.Pedigrees.Update(_pedigree);
         await Db.SaveChangesAsync();
-        Snackbar.Add("Goat saved", Severity.Success);
+        Snackbar.Add("Goat and pedigree saved", Severity.Success);
         StateHasChanged();
     }
 
     private async void DeleteGoat()
     {
         Db.Goats.Remove(_goat);
+        Db.Pedigrees.Remove(_pedigree);
         await Db.SaveChangesAsync();
-        Snackbar.Add("Goat Deleted", Severity.Success);
+        Snackbar.Add("Goat and pedigree Deleted", Severity.Success);
         NavigationManager.NavigateTo("/Goats/all");
     }
 
