@@ -1,9 +1,11 @@
 ﻿@page "/Goat/show/{id:long}"
 @using GoatInventory.Models
+@using GoatInventory.Pages.Dialogs
 @using Microsoft.EntityFrameworkCore
 @inject GoatInventoryContext Db
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
+@inject IDialogService Dialog
 
 @if (_loading)
 {
@@ -53,6 +55,15 @@ else
                                     <MudDatePicker @ref="_dos" Label="Date of Sale" Required="true" Date="_goat.DateOfSale ?? null"/>
                                 }
                                 <MudTextField @ref="_notes" T="string" Label="Notes" AutoGrow/>
+                                <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
+                                    <ButtonTemplate>
+                                        <MudFab HtmlTag="label"
+                                                Color="Color.Secondary"
+                                                Icon="@Icons.Material.Filled.Image"
+                                                Label="Update Picture"
+                                                for="@context.Id"/>
+                                    </ButtonTemplate>
+                                </MudFileUpload>
                             </MudForm>
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@SaveGoat">Save</MudButton>
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@DeleteGoat">Delete</MudButton>
@@ -155,6 +166,9 @@ else
     List<Kidding> _kiddings;
     Pedigree _pedigree;
 
+    IBrowserFile? _imageFile;
+    bool imageChange = false;
+
     protected override async Task OnInitializedAsync()
     {
         _goat = await Db.Goats.Where(x => x.Id == Id).FirstOrDefaultAsync();
@@ -171,6 +185,11 @@ else
 
     private async void SaveGoat()
     {
+        if (imageChange)
+        {
+            await ProcessImageChange();
+            imageChange = false;
+        }
         _goat.BarnName = _barnName.Value;
         _goat.FullName = _fullName.Value;
         _goat.Sex = _sex.Value;
@@ -202,6 +221,32 @@ else
         StateHasChanged();
     }
 
+    private async Task ProcessImageChange()
+    {
+        if (_imageFile is null) return;
+        if (_imageFile.Size > 5120000L)
+        {
+            _imageFile = null;
+            OpenDialog(new DialogOptions() { DisableBackdropClick = true});
+        }
+        else
+        {
+            DeleteOldFile(_goat?.ImageLink?.Substring(7) ?? null);
+            await using FileStream fs = new($"wwwroot/images/{_imageFile.Name}", FileMode.Create);
+            await _imageFile.OpenReadStream(5120000L).CopyToAsync(fs);
+            _goat.ImageLink = $"images/{_imageFile.Name}";
+        }
+    }
+
+    private void DeleteOldFile(string? oldImageName)
+    {
+        if (oldImageName is null) return;
+        if (File.Exists($"wwwroot/images/{oldImageName}"))
+        {
+            File.Delete($"wwwroot/images/{oldImageName}");
+        }
+    }
+
     private async void DeleteGoat()
     {
         Db.Goats.Remove(_goat);
@@ -224,5 +269,16 @@ else
     private void KiddingEventRowClick(TableRowClickEventArgs<Kidding> tableRowClickEventArgs)
     {
         NavigationManager.NavigateTo($"/Kidding/view/{tableRowClickEventArgs.Item.Id}");
+    }
+
+    private void UploadFiles(IBrowserFile uploadFile)
+    {
+        _imageFile = uploadFile;
+        imageChange = true;
+    }
+    
+    private void OpenDialog(DialogOptions options)
+    {
+        Dialog.Show<FileSizeDialog>("File too big", options);
     }
 }
