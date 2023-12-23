@@ -109,6 +109,7 @@
                 Dd = _dd.Value,
                 GoatId = res.Entity.Id
             };
+            _imageFile = null; // need to clear the file afterwards
             await Db.Pedigrees.AddAsync(pedigree);
             Snackbar.Add($"Goat {_fullName.Value} has been added", Severity.Success);
             await _form.ResetAsync();

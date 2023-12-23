@@ -231,13 +231,14 @@ else
         }
         else
         {
-            DeleteOldFile(_goat?.ImageLink?.Substring(7) ?? null);
+            //DeleteOldFile(_goat?.ImageLink?.Substring(7) ?? null);
             await using FileStream fs = new($"wwwroot/images/{_imageFile.Name}", FileMode.Create);
             await _imageFile.OpenReadStream(5120000L).CopyToAsync(fs);
             _goat.ImageLink = $"images/{_imageFile.Name}";
         }
     }
 
+    /* disabled due to bug, to be Re-enabled once images corrected*/
     private void DeleteOldFile(string? oldImageName)
     {
         if (oldImageName is null) return;
