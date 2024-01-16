@@ -1,0 +1,102 @@
+﻿@page "/Breeding/view/{id:long}"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@using System.Globalization
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+@if (loading)
+{
+    <MudSkeleton Animation="Animation.Wave" />
+}
+else if (_breedingEvent != null)
+{
+    <MudStack>
+        <MudCard>
+            <MudCardContent>
+                <MudItem>
+                    <MudStack>
+                        <MudForm @ref="_form">
+                            <MudTextField @ref=_buck T="string" Label="Buck" Required="false" Value="_breedingEvent.buck ?? string.Empty"/>
+                            <MudTextField @ref="_notes" T="string" Label="Notes" Required="false" Value="_breedingEvent.notes ?? string.Empty"/>
+                            <MudTextField ReadOnly="true" Value="_selectedGoat.BarnName ?? string.Empty"/>
+                            <MudSwitch T="bool" @bind-checked="_completed" Label="Complete" Color="Color.Primary"/>
+                            @if (_completed)
+                            {
+                                <MudSwitch T="bool" @bind-checked="_successful" Label="Successful" Color="Color.Primary"/>
+                            }
+                        </MudForm>
+                        <MudItem>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@SaveEvent">Save Event</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@DeleteEvent">Delete Event</MudButton>
+                        </MudItem>
+                    </MudStack>
+                </MudItem>
+            </MudCardContent>
+        </MudCard>
+    </MudStack>
+}
+else
+{
+    <MudText Typo="Typo.h3">Could not find an event with this ID</MudText>
+}
+
+@code {
+
+    [Parameter]
+    public long id { get; set; }
+    
+    bool loading = true;
+    Breeding? _breedingEvent;
+    List<Goat> _goats;
+    bool _completed { get; set; } = false;
+    bool _successful { get; set; } = false;
+
+    MudForm _form;
+    MudTextField<string> _buck;
+    MudTextField<string> _notes;
+
+    private Goat _selectedGoat;
+    
+    
+
+    protected override async Task OnInitializedAsync()
+    {
+        _breedingEvent = await Db.Breedings.Where(x => x.id == id).FirstOrDefaultAsync();
+        _goats = await Db.Goats.ToListAsync();
+        _selectedGoat = _goats.FirstOrDefault(x => x.Id == _breedingEvent.goatId);
+        loading = false;
+    }
+    
+    private async Task SaveEvent()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            _breedingEvent.buck = _buck.Value ?? "";
+            _breedingEvent.notes = _notes.Value ?? "";
+            _breedingEvent.complete = _completed;
+            _breedingEvent.date = _breedingEvent.date.Value.ToUniversalTime();
+            _breedingEvent.dueDate = _breedingEvent.dueDate.Value.ToUniversalTime();
+            if (_completed) _breedingEvent.successful = _successful;
+            Db.Breedings.Update(_breedingEvent);
+            await Db.SaveChangesAsync();
+            StateHasChanged();
+            Snackbar.Add("Breeding event updated.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Form is not valid", Severity.Error);
+        }
+    }
+
+    private async Task DeleteEvent()
+    {
+        if (_breedingEvent != null) Db.Breedings.Remove(_breedingEvent);
+        await _form.ResetAsync();
+        await Db.SaveChangesAsync();
+        Snackbar.Add("Breeding event Deleted", Severity.Success);
+        NavigationManager.NavigateTo($"/Goat/show/{_selectedGoat.Id}");
+    }
+}

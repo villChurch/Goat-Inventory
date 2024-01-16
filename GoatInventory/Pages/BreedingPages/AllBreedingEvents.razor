@@ -1,0 +1,58 @@
+﻿@page "/Breeding/All"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@inject GoatInventoryContext Db
+@inject NavigationManager NavigationManager
+
+@if (loading)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Pulse"/>    
+}
+else
+{
+    <MudPaper>
+        <MudStack>
+            <MudTable Items="_breedingEvents" Hover="true" T="Breeding" OnRowClick="BreedingEventRowClick">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.buck)">Buck</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.date)">Date</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.dueDate)">Due Date</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.successful)">Successful</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.complete)">Complete</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.notes)">Notes</MudTableSortLabel></MudTh>
+                    <MudTh>Goat</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Buck">@context.buck</MudTd>
+                    <MudTd DataLabel="Date">@context.date</MudTd>
+                    <MudTd DataLabel="Due Date">@context.dueDate</MudTd>
+                    <MudTd DataLabel="Successful">@context.successful</MudTd>
+                    <MudTd DataLabel="Complete">@context.complete</MudTd>
+                    <MudTd DataLabel="Notes">@context.notes</MudTd>
+                    <MudTd DataLabel="Goat">@(Db.Goats.FirstOrDefault(x => x.Id == @context.goatId)?.BarnName ?? "Unknown")</MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager/>
+                </PagerContent>
+            </MudTable>
+        </MudStack>
+    </MudPaper>
+}
+
+
+@code {
+
+    List<Breeding> _breedingEvents;
+    bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _breedingEvents = await Db.Breedings.ToListAsync();
+        loading = false;
+    }
+    
+    private void BreedingEventRowClick(TableRowClickEventArgs<Breeding> tableRowClickEventArgs)
+    {
+        NavigationManager.NavigateTo($"/Breeding/view/{tableRowClickEventArgs.Item.id}");
+    }
+}

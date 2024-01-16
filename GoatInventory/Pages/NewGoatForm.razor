@@ -1,6 +1,7 @@
 ﻿@page "/Goat/new"
 @using GoatInventory.Models
 @using GoatInventory.Pages.Dialogs
+@using System.Globalization
 @inject GoatInventoryContext Db
 @inject ISnackbar Snackbar
 @inject IDialogService Dialog
@@ -75,7 +76,9 @@
 
     private bool CheckDate()
     {
-        return _dateOfBirthString.Value.Length > 0 && DateTime.TryParse(_dateOfBirthString.Value, out _dob);
+        return _dateOfBirthString.Value.Length > 0 && DateTime.TryParseExact(_dateOfBirthString.Value, "MM/dd/yyyy",
+            CultureInfo.InvariantCulture, 
+            DateTimeStyles.None, out _dob);
     }
     private async void AddNewGoat()
     {
