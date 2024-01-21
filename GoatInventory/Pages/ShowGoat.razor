@@ -132,6 +132,37 @@ else
                 </MudTable>
             </MudStack>
         </MudPaper>
+        <MudPaper>
+            <MudStack>
+                <MudGrid>
+                    <MudItem xs="10">
+                        <MudText Typo="Typo.h4" Align="Align.Center">Breeding events for @_goat.BarnName</MudText>
+                    </MudItem>
+                </MudGrid>
+                <MudSpacer/>
+                <MudTable Items="_breedingEvents" Hover="true" T="Breeding" OnRowClick="BreedingEventRowClick">
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x =>x.buck)">Buck</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x =>x.date)">Date</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x =>x.dueDate)">Due Date</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x =>x.successful)">Successful</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x =>x.complete)">Complete</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.notes)">Notes</MudTableSortLabel></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Buck">@context.buck</MudTd>
+                        <MudTd DataLabel="Date">@context.date</MudTd>
+                        <MudTd DataLabel="Due Date">@context.dueDate</MudTd>
+                        <MudTd DataLabel="Successful">@context.successful</MudTd>
+                        <MudTd DataLabel="Complete">@context.complete</MudTd>
+                        <MudTd DataLabel="Notes">@context.notes</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager/>
+                    </PagerContent>
+                </MudTable>
+            </MudStack>
+        </MudPaper>
     </MudStack>
 }
 
@@ -164,6 +195,7 @@ else
     Goat? _goat;
     List<HealthEvent> _healthEvents;
     List<Kidding> _kiddings;
+    List<Breeding> _breedingEvents;
     Pedigree _pedigree;
 
     IBrowserFile? _imageFile;
@@ -171,7 +203,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _goat = await Db.Goats.Where(x => x.Id == Id).FirstOrDefaultAsync();
+        _goat = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(Db.Goats.Where(x => x.Id == Id));
         if (_goat != null)
         {
             Sold = _goat.Sold.Value;
@@ -179,6 +211,7 @@ else
             _healthEvents = await Db.HealthEvents.Where(x => x.GoatId == _goat.Id).ToListAsync();
             _kiddings = await Db.Kiddings.Where(x => x.GoatId == _goat.Id).ToListAsync();
             _pedigree = await Db.Pedigrees.FirstOrDefaultAsync(x => x.GoatId == _goat.Id) ?? new Pedigree();
+            _breedingEvents = await Db.Breedings.Where(x => x.goatId == _goat.Id).ToListAsync();
         }
         _loading = false;
     }
@@ -270,6 +303,11 @@ else
     private void KiddingEventRowClick(TableRowClickEventArgs<Kidding> tableRowClickEventArgs)
     {
         NavigationManager.NavigateTo($"/Kidding/view/{tableRowClickEventArgs.Item.Id}");
+    }
+
+    private void BreedingEventRowClick(TableRowClickEventArgs<Breeding> tableRowClickEventArgs)
+    {
+        NavigationManager.NavigateTo($"/Breeding/view/{tableRowClickEventArgs.Item.id}");
     }
 
     private void UploadFiles(IBrowserFile uploadFile)

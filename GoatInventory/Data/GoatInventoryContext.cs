@@ -23,6 +23,8 @@ public partial class GoatInventoryContext : DbContext
 
     public virtual DbSet<Pedigree> Pedigrees { get; set; }
     
+    public virtual DbSet<Breeding> Breedings { get; set; }
+    
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +77,20 @@ public partial class GoatInventoryContext : DbContext
             entity.Property(e => e.GoatId).HasColumnName("goatId");
             entity.Property(e => e.Sd).HasColumnName("SD");
             entity.Property(e => e.Ss).HasColumnName("SS");
+        });
+
+        modelBuilder.Entity<Breeding>(entity =>
+        {
+            entity.HasKey(e => e.id).HasName("breeding_pkey");
+            entity.ToTable("breeding", "goatinventory");
+            entity.Property(e => e.id).HasColumnName("id");
+            entity.Property(e => e.goatId).HasColumnName("goatId");
+            entity.Property(e => e.buck).HasColumnName("buck");
+            entity.Property(e => e.date).HasColumnName("date");
+            entity.Property(e => e.dueDate).HasColumnName("dueDate");
+            entity.Property(e => e.notes).HasColumnName("notes");
+            entity.Property(e => e.complete).HasColumnName("complete").HasDefaultValue(false);
+            entity.Property(e => e.successful).HasColumnName("successful");
         });
 
         OnModelCreatingPartial(modelBuilder);

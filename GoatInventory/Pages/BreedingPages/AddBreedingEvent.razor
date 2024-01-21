@@ -1,0 +1,104 @@
+﻿@page "/Breeding/Add"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@using System.Globalization
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+
+@if (loading)
+{
+    <MudSkeleton Animation="Animation.Wave" />
+}
+else if (_goats.Any())
+{
+    <MudStack>
+        <MudCard>
+            <MudCardContent>
+                <MudItem>
+                    <MudStack>
+                        <MudForm @ref="_form">
+                            <MudTextField @ref=_buck T="string" Label="Buck" Required="false"/>
+                            <MudTextField @ref="_notes" T="string" Label="Notes" Required="false"/>
+                            <MudTextField @ref="_date" T="string" Label="Date in mm/dd/yyyy" Required="true"/>
+                            <MudSelect T="Goat" Label="Goats" MultiSelection="true" @bind-Value="@_value"
+                                       @bind-SelectedValues="@_values" ToStringFunc="@_converter"
+                                       SelectAll="true" SelectAllText="Select all Goats">
+                                @foreach (var goat in _goats)
+                                {
+                                    <MudSelectItem T="Goat" Value="@goat"/>
+                                }
+                            </MudSelect>
+                        </MudForm>
+                        <MudItem>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@AddEvent">Save Event</MudButton>
+                        </MudItem>
+                    </MudStack>
+                </MudItem>
+            </MudCardContent>
+        </MudCard>
+    </MudStack>
+}
+else
+{
+    <MudText Typo="Typo.h3">You need to add goats to your herd first.</MudText>
+}
+
+@code {
+    List<Goat> _goats;
+    MudForm _form;
+    private bool loading = true;
+    private MudTextField<string> _buck;
+    private MudTextField<string> _notes;
+    private MudTextField<string> _date;
+    private DateTime eventDate;
+
+    Goat _value { get; set; }
+    IEnumerable<Goat> _values { get; set; } = new HashSet<Goat>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _goats = await Db.Goats.ToListAsync();
+        loading = false;
+    }
+
+    private bool CheckDate()
+    {
+        return _date.Value.Length > 0 && DateTime.TryParseExact(_date.Value, "MM/dd/yyyy",
+            CultureInfo.InvariantCulture, 
+            DateTimeStyles.None, out eventDate);
+    }
+    private async void AddEvent()
+    {
+        await _form.Validate();
+        if (!CheckDate())
+        {
+            Snackbar.Add("Date is not valid", Severity.Error);
+        }
+        if (_form.IsValid && _values.Any())
+        {
+            foreach (var goat in _values)
+            {
+                var breedingEvent = new Breeding
+                {
+                    buck = _buck.Value ?? "",
+                    date = eventDate.Date.ToUniversalTime(),
+                    dueDate = eventDate.AddDays(150).ToUniversalTime(),
+                    notes = _notes.Value ?? "",
+                    goatId = goat.Id
+                };
+                await Db.Breedings.AddAsync(breedingEvent);
+            }
+
+            await Db.SaveChangesAsync();
+            await _form.ResetAsync();
+            StateHasChanged();
+            Snackbar.Add($"Breeding event saved for {_values.Count()} goats.", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Form is not valid or no goats are selected.", Severity.Error);
+        }
+    }
+
+    readonly Func<Goat, string> _converter = g => $"{g.BarnName}, {g.FullName}";
+}

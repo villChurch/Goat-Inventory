@@ -27,7 +27,7 @@
         <MudTd DataLabel="Alive">@context.Alive</MudTd>
     </RowTemplate>
     <PagerContent>
-        <MudTablePager />
+        <MudTablePager PageSizeOptions="@(new int[]{_goats.Count(), 10, 50, 100})" />
     </PagerContent>
 </MudTable>
 
@@ -40,7 +40,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _goats = await db.Goats.ToListAsync();
+        _goats = await db.Goats.OrderBy(x => x.DateOfBirth).ToListAsync();
     }
     
     private bool FilterFunc1(Goat element) => FilterFunc(element, searchString1);
