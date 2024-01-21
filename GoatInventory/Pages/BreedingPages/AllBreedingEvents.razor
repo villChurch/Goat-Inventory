@@ -14,25 +14,25 @@ else
         <MudStack>
             <MudTable Items="_breedingEvents" Hover="true" T="Breeding" OnRowClick="BreedingEventRowClick">
                 <HeaderContent>
+                    <MudTh>Goat</MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.buck)">Buck</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.date)">Date</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.dueDate)">Due Date</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.successful)">Successful</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.complete)">Complete</MudTableSortLabel></MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<Breeding, object?>(x => x.notes)">Notes</MudTableSortLabel></MudTh>
-                    <MudTh>Goat</MudTh>
                 </HeaderContent>
                 <RowTemplate>
+                    <MudTd DataLabel="Goat">@(Db.Goats.FirstOrDefault(x => x.Id == @context.goatId)?.BarnName ?? "Unknown")</MudTd>
                     <MudTd DataLabel="Buck">@context.buck</MudTd>
                     <MudTd DataLabel="Date">@context.date</MudTd>
                     <MudTd DataLabel="Due Date">@context.dueDate</MudTd>
                     <MudTd DataLabel="Successful">@context.successful</MudTd>
                     <MudTd DataLabel="Complete">@context.complete</MudTd>
                     <MudTd DataLabel="Notes">@context.notes</MudTd>
-                    <MudTd DataLabel="Goat">@(Db.Goats.FirstOrDefault(x => x.Id == @context.goatId)?.BarnName ?? "Unknown")</MudTd>
                 </RowTemplate>
                 <PagerContent>
-                    <MudTablePager/>
+                    <MudTablePager PageSizeOptions="@(new[]{_breedingEvents.Count, 10, 50, 100})" />
                 </PagerContent>
             </MudTable>
         </MudStack>
@@ -47,7 +47,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _breedingEvents = await Db.Breedings.ToListAsync();
+        _breedingEvents = await Db.Breedings.OrderBy(x => x.dueDate).ToListAsync();
         loading = false;
     }
     
