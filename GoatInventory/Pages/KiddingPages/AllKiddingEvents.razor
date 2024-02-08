@@ -1,0 +1,51 @@
+﻿@page "/Kidding/All"
+@using GoatInventory.Models
+@using Microsoft.EntityFrameworkCore
+@inject GoatInventoryContext Db
+@inject NavigationManager NavigationManager
+
+@if (_loading)
+{
+    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Animation="Animation.Pulse"/>
+}
+else
+{
+    <MudPaper>
+        <MudStack>
+            <MudTable Items="_kiddingEvents" Hover="true" T="Kidding" OnRowClick="KiddingEventRowClick">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.GoatId)">Goat</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.Sire)">Sire</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.Date)">Date</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.does)">Does</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<Kidding, object?>(x => x.bucks)">Bucks</MudTableSortLabel></MudTh>
+                    <MudTh>Notes</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Goat">@(Db.Goats.FirstOrDefault(x => x.Id == context.GoatId)?.BarnName ?? "Unknown")</MudTd>
+                    <MudTd DataLabel="Sire">@context.Sire</MudTd>
+                    <MudTd DataLabel="Date">@context.Date</MudTd>
+                    <MudTd DataLabel="Does">@context.does</MudTd>
+                    <MudTd DataLabel="Bucks">@context.bucks</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudStack>
+    </MudPaper>
+}
+
+@code {
+
+    private bool _loading = true;
+    List<Kidding> _kiddingEvents;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _kiddingEvents = await Db.Kiddings.OrderByDescending(x => x.Date).ToListAsync();
+        _loading = false;
+    }
+
+    private void KiddingEventRowClick(TableRowClickEventArgs<Kidding> tableRowClickEventArgs)
+    {
+        NavigationManager.NavigateTo($"/Kidding/view/{tableRowClickEventArgs.Item.Id}");
+    }
+}
