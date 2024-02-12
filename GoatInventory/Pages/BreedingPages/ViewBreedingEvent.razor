@@ -1,7 +1,8 @@
 ﻿@page "/Breeding/view/{id:long}"
 @using GoatInventory.Models
+@using GoatInventory.Pages.Dialogs
 @using Microsoft.EntityFrameworkCore
-@using System.Globalization
+@inject IDialogService DialogService
 @inject GoatInventoryContext Db
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
@@ -41,6 +42,12 @@ else
 {
     <MudText Typo="Typo.h3">Could not find an event with this ID</MudText>
 }
+
+<style>
+    .my-custom-class {
+        backdrop-filter: blur(10px);
+    }
+</style>
 
 @code {
 
@@ -84,6 +91,12 @@ else
             await Db.SaveChangesAsync();
             StateHasChanged();
             Snackbar.Add("Breeding event updated.", Severity.Success);
+            if (_successful)
+            {
+                var parameters = new DialogParameters<SuccessfulBreedingEventDialog> { { x => x._goat, _selectedGoat } };
+                var options = new DialogOptions { ClassBackground = "my-custom-class" };
+                await DialogService.ShowAsync<SuccessfulBreedingEventDialog>($"Kidding Event for {_selectedGoat.BarnName}", parameters, options);
+            }
         }
         else
         {

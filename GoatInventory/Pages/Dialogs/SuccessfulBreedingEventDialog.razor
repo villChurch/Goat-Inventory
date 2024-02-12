@@ -1,0 +1,66 @@
+﻿@using GoatInventory.Models
+@inject GoatInventoryContext Db
+@inject ISnackbar Snackbar
+<MudDialog>
+    <DialogContent>
+        <MudStack>
+            <MudCard>
+                <MudCardContent>
+                    <MudForm @ref="_form">
+                        <MudNumericField @bind-Value="_does" Label="Does" Variant="Variant.Text" Min="0"/>
+                        <MudNumericField @bind-Value="_bucks" Label="Bucks" Variant="Variant.Text" Min="0"/>
+                        <MudTextField @ref="_sire" T="string" Label="Sire" Required="true" RequiredError="Sire must be present"/>
+                        <MudTextField @ref="_notes" T="string" Label="Notes" Required="false"/>
+                        <MudDatePicker @ref="_eventDate" Label="Event Date" Date="DateTime.Now"/>
+                    </MudForm>
+                </MudCardContent>
+            </MudCard>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save</MudButton>
+        <MudButton Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public Goat _goat { get; set; }
+
+    MudForm _form;
+    MudTextField<string> _sire;
+    MudTextField<string> _notes;
+    MudDatePicker _eventDate;
+    public int _does { get; set; } = 0;
+    public int _bucks { get; set; } = 0;
+
+
+    private async void Submit()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            var kiddingevent = new Kidding
+            {
+                Date = _eventDate.Date.Value.ToUniversalTime(),
+                GoatId = _goat.Id,
+                Sire = _sire.Value,
+                Notes = _notes.Value,
+                bucks = _bucks,
+                does = _does
+            };
+            await Db.Kiddings.AddAsync(kiddingevent);
+            await Db.SaveChangesAsync();
+            Snackbar.Add($"Kidding event saved for {_goat.BarnName}", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add($"Error has occured trying to create a kidding event. Please add manually.", Severity.Error);
+        }
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+    
+    // void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    void Cancel() => MudDialog.Cancel();
+}
