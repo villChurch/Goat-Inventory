@@ -4,7 +4,14 @@
 @inject GoatInventoryContext db
 @inject NavigationManager _nav
 
-<MudTable Items="@_goats" Filter="new Func<Goat,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1" OnRowClick="RowClickEvent" T="Goat">
+<MudGrid>
+    <MudSwitch @bind-Checked="_showDeadGoats" Color="Color.Primary">Show Dead Goats</MudSwitch>
+    <MudSwitch @bind-Checked="_showSoldGoats" Color="Color.Primary">Show Sold Goats</MudSwitch>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Callback">Filter</MudButton>
+</MudGrid>
+<MudSpacer/>
+<br/>
+<MudTable @ref="_table" Items="@_goats" Filter="new Func<Goat,bool>(FilterFunc1)" @bind-SelectedItem="selectedItem1" OnRowClick="RowClickEvent" T="Goat">
     <ToolBarContent>
         <MudText Typo="Typo.h6">Goats</MudText>
         <MudSpacer />
@@ -27,7 +34,7 @@
         <MudTd DataLabel="Alive">@context.Alive</MudTd>
     </RowTemplate>
     <PagerContent>
-        <MudTablePager PageSizeOptions="@(new int[]{_goats.Count(), 10, 50, 100})" />
+        <MudTablePager @ref="_pager" PageSizeOptions="@(new int[]{_goats.Count(), 10, 50, 100})" />
     </PagerContent>
 </MudTable>
 
@@ -37,10 +44,14 @@
 
     private Goat selectedItem1 = null;
     private string searchString1 = "";
+    private bool _showDeadGoats = false;
+    private bool _showSoldGoats = false;
+    MudTable<Goat> _table;
+    MudTablePager _pager;
 
     protected override async Task OnInitializedAsync()
     {
-        _goats = await db.Goats.OrderBy(x => x.DateOfBirth).ToListAsync();
+        _goats = await LoadGoats();
     }
     
     private bool FilterFunc1(Goat element) => FilterFunc(element, searchString1);
@@ -57,9 +68,34 @@
             return true;
         return false;
     }
-    
+
     private void RowClickEvent(TableRowClickEventArgs<Goat> tableRowClickEventArgs)
     {
         _nav.NavigateTo($"/Goat/show/{tableRowClickEventArgs.Item.Id}");
     }
+
+    private async Task<List<Goat>> LoadGoats()
+    {
+        return await db.Goats.Where(x => x.Alive == true && x.Sold == false).OrderBy(x => x.DateOfBirth).ToListAsync();
+    }
+    private async void Callback(MouseEventArgs obj)
+    {
+        var list = await LoadGoats();
+        if (_showSoldGoats)
+        {
+            var soldGoats = await db.Goats.Where(x => x.Sold == true).ToListAsync();
+            list.AddRange(soldGoats);
+        }
+
+        if (_showDeadGoats)
+        {
+            var deadGoats = await db.Goats.Where(x => x.Alive == false).ToListAsync();
+            list.AddRange(deadGoats);
+        }
+
+        _goats = list;
+        _table.SetRowsPerPage(list.Count);
+        StateHasChanged();
+    }
+
 }
