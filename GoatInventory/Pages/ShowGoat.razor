@@ -109,6 +109,10 @@ else
                     <MudItem xs="10">
                         <MudText Typo="Typo.h4" Align="Align.Center">Kidding Events for @_goat.BarnName</MudText>
                     </MudItem>
+                    <MudItem>
+                        <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                                OnClick="@OnAddKiddingClick"/>
+                    </MudItem>
                 </MudGrid>
                 <MudSpacer/>
                 <MudTable Items="_kiddings" Hover="true" T="Kidding" OnRowClick="KiddingEventRowClick">
@@ -137,6 +141,10 @@ else
                 <MudGrid>
                     <MudItem xs="10">
                         <MudText Typo="Typo.h4" Align="Align.Center">Breeding events for @_goat.BarnName</MudText>
+                    </MudItem>
+                    <MudItem>
+                        <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                                OnClick="@OnAddBreedingClick"/>
                     </MudItem>
                 </MudGrid>
                 <MudSpacer/>
@@ -293,6 +301,16 @@ else
     private void OnAddClick()
     {
         NavigationManager.NavigateTo($"/Healthevent/add/{_goat.Id}");
+    }
+
+    private void OnAddBreedingClick()
+    {
+        NavigationManager.NavigateTo($"/Breeding/Add");
+    }
+
+    private void OnAddKiddingClick()
+    {
+        NavigationManager.NavigateTo($"/Kidding/add");
     }
 
     private void HealthEventRowClick(TableRowClickEventArgs<HealthEvent> tableRowClickEventArgs)
