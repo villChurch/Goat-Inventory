@@ -3,10 +3,12 @@
 @using Microsoft.EntityFrameworkCore
 @inject GoatInventoryContext db
 @inject NavigationManager _nav
+@inject IJSRuntime JsRuntime
 
 <MudGrid>
     <MudSwitch @bind-Checked="_showDeadGoats" Color="Color.Primary">Show Dead Goats</MudSwitch>
     <MudSwitch @bind-Checked="_showSoldGoats" Color="Color.Primary">Show Sold Goats</MudSwitch>
+    <MudSwitch @bind-Checked="_newTab" Color="Color.Primary">Open pages in new Tab</MudSwitch>
     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Callback">Filter</MudButton>
 </MudGrid>
 <MudSpacer/>
@@ -46,6 +48,7 @@
     private string searchString1 = "";
     private bool _showDeadGoats = false;
     private bool _showSoldGoats = false;
+    private bool _newTab = false;
     MudTable<Goat> _table;
     MudTablePager _pager;
 
@@ -71,7 +74,14 @@
 
     private void RowClickEvent(TableRowClickEventArgs<Goat> tableRowClickEventArgs)
     {
-        _nav.NavigateTo($"/Goat/show/{tableRowClickEventArgs.Item.Id}");
+        if (_newTab)
+        {
+            JsRuntime.InvokeAsync<object>("open", $"/Goat/show/{tableRowClickEventArgs.Item.Id}", "_blank");
+        }
+        else
+        {
+            _nav.NavigateTo($"/Goat/show/{tableRowClickEventArgs.Item.Id}");   
+        }
     }
 
     private async Task<List<Goat>> LoadGoats()
