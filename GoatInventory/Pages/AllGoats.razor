@@ -6,9 +6,9 @@
 @inject IJSRuntime JsRuntime
 
 <MudGrid>
-    <MudSwitch @bind-Checked="_showDeadGoats" Color="Color.Primary">Show Dead Goats</MudSwitch>
-    <MudSwitch @bind-Checked="_showSoldGoats" Color="Color.Primary">Show Sold Goats</MudSwitch>
-    <MudSwitch @bind-Checked="_newTab" Color="Color.Primary">Open pages in new Tab</MudSwitch>
+    <MudSwitch @bind-Value="_showDeadGoats" Color="Color.Primary" T="bool">Show Dead Goats</MudSwitch>
+    <MudSwitch @bind-Value="_showSoldGoats" Color="Color.Primary" T="bool">Show Sold Goats</MudSwitch>
+    <MudSwitch @bind-Value="_newTab" Color="Color.Primary" T="bool">Open pages in new Tab</MudSwitch>
     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Callback">Filter</MudButton>
 </MudGrid>
 <MudSpacer/>
@@ -105,6 +105,7 @@
 
         _goats = list;
         _table.SetRowsPerPage(list.Count);
+        await _table.ReloadServerData();
         StateHasChanged();
     }
 

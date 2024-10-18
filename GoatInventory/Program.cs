@@ -1,6 +1,4 @@
 using GoatInventory.Models;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
@@ -14,6 +12,11 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddMudServices();
 
+#if !DEBUG 
+builder.Configuration.AddJsonFile("appSettings.json");
+#endif
+
+Console.WriteLine($"Connection string - {builder.Configuration.GetConnectionString("Default")}");
 builder.Services.AddDbContext<GoatInventoryContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 

@@ -22,10 +22,10 @@ else if (_breedingEvent != null)
                             <MudTextField @ref=_buck T="string" Label="Buck" Required="false" Value="_breedingEvent.buck ?? string.Empty"/>
                             <MudTextField @ref="_notes" T="string" Label="Notes" Required="false" Value="_breedingEvent.notes ?? string.Empty"/>
                             <MudTextField ReadOnly="true" Value="_selectedGoat.BarnName ?? string.Empty"/>
-                            <MudSwitch T="bool" @bind-checked="_completed" Label="Complete" Color="Color.Primary"/>
+                            <MudSwitch T="bool" @bind-Value="_completed" Label="Complete" Color="Color.Primary"/>
                             @if (_completed)
                             {
-                                <MudSwitch T="bool" @bind-checked="_successful" Label="Successful" Color="Color.Primary"/>
+                                <MudSwitch T="bool" @bind-Value="_successful" Label="Successful" Color="Color.Primary"/>
                             }
                         </MudForm>
                         <MudItem>
@@ -94,7 +94,7 @@ else
             if (_successful)
             {
                 var parameters = new DialogParameters<SuccessfulBreedingEventDialog> { { x => x._goat, _selectedGoat } };
-                var options = new DialogOptions { ClassBackground = "my-custom-class" };
+                var options = new DialogOptions { BackgroundClass = "my-custom-class" };
                 await DialogService.ShowAsync<SuccessfulBreedingEventDialog>($"Kidding Event for {_selectedGoat.BarnName}", parameters, options);
             }
         }

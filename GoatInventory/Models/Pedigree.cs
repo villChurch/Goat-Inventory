@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace GoatInventory.Models;
+﻿namespace GoatInventory.Models;
 
 public partial class Pedigree
 {

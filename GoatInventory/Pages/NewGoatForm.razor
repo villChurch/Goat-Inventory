@@ -18,14 +18,20 @@
                         <MudTextField @ref="_dateOfBirthString" T="string" Label="Date Of Birth" Placeholder="mm/dd/yyyy" Required="true"/>
                         @* <MudDatePicker @ref="_dateOfBirth" Label="Date Of Birth" Editable="true" @bind-Date="_date" Placeholder="Select Date" Required="true" Mask="@(new DateMask("MM/dd/yyyy"))" DateFormat="MM/dd/yyyy"/> *@
                         <MudTextField @ref="_breed" T="string" Label="Breed" Required="true" RequiredError="Goat must have a breed"/>
+                        @* <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles"> *@
+                        @*     <ButtonTemplate> *@
+                        @*         <MudFab HtmlTag="label" *@
+                        @*                 Color="Color.Secondary" *@
+                        @*                 Icon="@Icons.Material.Filled.Image" *@
+                        @*                 Label="Load picture"/> *@
+                        @*     </ButtonTemplate> *@
+                        @* </MudFileUpload> *@
                         <MudFileUpload T="IBrowserFile" FilesChanged="UploadFiles">
-                            <ButtonTemplate>
-                                <MudFab HtmlTag="label"
-                                        Color="Color.Secondary"
-                                        Icon="@Icons.Material.Filled.Image"
-                                        Label="Load picture"
-                                        for="@context.Id"/>
-                            </ButtonTemplate>
+                            <ActivatorContent>
+                                <MudFab Color="Color.Secondary"
+                                        StartIcon="@Icons.Material.Filled.Image"
+                                        Label="Load picture" />
+                            </ActivatorContent>
                         </MudFileUpload>
                     </MudForm>
                 </MudPaper>
@@ -46,7 +52,7 @@
 
         <MudPaper Class="pa-4 mt-4">
             <MudButton Variant="Variant.Filled" Color="Color.Primary" DisableElevation="true" OnClick="@AddNewGoat">Add Goat</MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Secondary" DisableElevation="true" OnClick="@(()=>_form.Reset())" Class="mx-2">Reset</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" DisableElevation="true" OnClick="@(async ()=>await _form.ResetAsync())" Class="mx-2">Reset</MudButton>
         </MudPaper>
     </MudItem>
 </MudGrid>
@@ -136,7 +142,7 @@
         if (_imageFile.Size > 5120000L)
         {
             _imageFile = null;
-            OpenDialog(new DialogOptions() { DisableBackdropClick = true });
+            OpenDialog(new DialogOptions() { BackdropClick = false });
         }
         else
         {

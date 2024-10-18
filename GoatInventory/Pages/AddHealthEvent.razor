@@ -87,7 +87,7 @@ else
             
             await _db.HealthEvents.AddAsync(_healthEvent);
             await _db.SaveChangesAsync();
-            _form.Reset();
+            await _form.ResetAsync();
             _healthEvents = await _db.HealthEvents.Where(x => x.GoatId == goatId).ToListAsync();
             StateHasChanged();
             _Snackbar.Add($"Health event saved for {_goat.BarnName}", Severity.Success);

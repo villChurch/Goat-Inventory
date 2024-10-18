@@ -24,8 +24,8 @@ else if(_goats.Any())
                                              ProgressIndicatorColor="SelectedColor" ToStringFunc="converter"
                                              Required="true" RequiredError="Must select a goat for this event">
                                 <ProgressIndicatorInPopoverTemplate>
-                                    <MudList Clickable="false">
-                                        <MudListItem>
+                                    <MudList Clickable="false" T="List<Goat>">
+                                        <MudListItem T="Goat">
                                             Loading Goats...
                                         </MudListItem>
                                     </MudList>
@@ -68,7 +68,7 @@ else
         loading = false;
     }
     
-    private Task<IEnumerable<Goat>> Search1(string value)
+    private Task<IEnumerable<Goat>> Search1(string value, CancellationToken cancellationToken)
     {
         return Task.FromResult(string.IsNullOrEmpty(value) ? _goats 
             : _goats.Where(x => x.BarnName!.Contains(value, StringComparison.InvariantCultureIgnoreCase)));
